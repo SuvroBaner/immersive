@@ -1,0 +1,33 @@
+[project]
+name = "immersive-text-service"
+version = "0.1.0"
+description = "A FastAPI service to generate content using Gemini/Multimodal AI."
+readme = "README.md"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+requires-python = ">=3.10"
+
+# --- Production Dependencies ---
+# The package name has been corrected to "google-genai"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "requests",
+    "Pillow",
+    "google-generativeai>=0.8.5",
+]
+
+# --- Development Dependencies (New Format) ---
+# This replaces the [tool.uv] section and fixes the warning
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+# --- Build System ---
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
