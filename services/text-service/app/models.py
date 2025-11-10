@@ -43,8 +43,9 @@ JSON
 
 """
 
+from ast import Dict
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Any, List, Optional
 
 # ---- Request Models ----
 # These models define the expected input
@@ -79,3 +80,4 @@ class ContentResponse(BaseModel):
     generated_content: GeneratedContent = Field(..., description="The generated content")
     ai_model_used: str = Field(..., description="The AI model used to generate the content")
     latency_ms: float = Field(..., description="The latency of the content generation in milliseconds")
+    metadata: Optional[Dict[str, Any]] = None
