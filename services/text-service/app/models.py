@@ -63,7 +63,7 @@ class Config(BaseModel):
 
 class ContentRequest(BaseModel):
     image_url: str = Field(
-      "https://unsplash.com/photos/brown-clay-pot-on-gray-concrete-epUnuoLl8es",
+      "https://images.unsplash.com/photo-1604264726154-26480e76f4e1?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2xheSUyMHBvdHxlbnwwfHwwfHx8MA%3D%3D&fm=jpg&q=60&w=3000",
       description="The URL of the image")
     seller_inputs: SellerInputs = Field(..., description="The inputs from the seller")
     config: Config = Field(..., description="The config for the content")

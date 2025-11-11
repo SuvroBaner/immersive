@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     default_provider: str = "gemini"
     
     # Mock mode for testing
-    mock_mode: bool = True # True
+    mock_mode: bool = False # True
     
     # Generic API keys map, one place to define per-provider keys.
     # Can be overridden from env using API_KEYS__<PROVIDER>=value (see env_nested_delimiter below).
