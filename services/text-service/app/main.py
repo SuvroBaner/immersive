@@ -44,8 +44,10 @@ async def create_product_content(
         provider_name = provider or settings.default_provider
 
         # Get provider instance from factory
+        # Pass mock_mode from settings - if True, factory will return MockProvider
         ai_provider = ModelProviderFactory.get_provider(
             provider_name = provider_name,
+            mock_mode = settings.mock_mode,
             category = request.seller_inputs.category if hasattr(request.seller_inputs, "category") else None,
             platform = request.config.target_platform if hasattr(request.config, "target_platform") else None
         )
@@ -57,13 +59,16 @@ async def create_product_content(
         end_time = time.time()
         latency_ms = (end_time - start_time) * 1000
 
+        # Determine the actual provider used (mock if mock_mode is enabled)
+        actual_provider = "mock" if settings.mock_mode else provider_name
+
         # Create response
         response = ContentResponse(
             generated_content = generated_data,
             ai_model_used = model_name,
             latency_ms = latency_ms,
             metadata = {
-                "provider": provider_name,
+                "provider": actual_provider,
                 "model": model_name
             }
         )
@@ -98,7 +103,9 @@ def list_providers(settings: Settings = Depends(get_settings)):
         return {
             "default_provider": settings.default_provider,
             "available_providers": providers,
-            "provider_settings": settings.provider_settings
+            "provider_settings": settings.provider_settings,
+            "mock_mode": settings.mock_mode,
+            "note": "When mock_mode is True, all requests will use MockProvider regardless of provider selection"
         }
 
     except Exception as e:

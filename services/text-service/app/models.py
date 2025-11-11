@@ -45,24 +45,26 @@ JSON
 
 from ast import Dict
 from pydantic import BaseModel, Field
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Dict
 
 # ---- Request Models ----
 # These models define the expected input
 
 class SellerInputs(BaseModel):
-    item_name: str = Field(..., description="The name of the item")
-    materials: str = Field(..., description="The materials used to make the item")
-    inspiration: str = Field(..., description="The inspiration for the item")
-    category: str = Field(..., description="The category of the item")
+    item_name: str = Field("Clay Pot", description="The name of the item")
+    materials: str = Field("Natural terracotta clay, white paint", description="The materials used to make the item")
+    inspiration: str = Field("Made this during the rainy season, inspired by my garden", description="The inspiration for the item")
+    category: str = Field("Pottery", description="The category of the item")
 
 class Config(BaseModel):
-    tone: str = Field(..., description="The tone of the content")
-    language: str = Field(..., description="The language of the content")
-    target_platform: str = Field(..., description="The platform of the content")
+    tone: str = Field("evocative", description="The tone of the content")
+    language: str = Field("en-IN", description="The language of the content")
+    target_platform: str = Field("web", description="The platform of the content")
 
 class ContentRequest(BaseModel):
-    image_url: str = Field(..., description="The URL of the image")
+    image_url: str = Field(
+      "https://unsplash.com/photos/brown-clay-pot-on-gray-concrete-epUnuoLl8es",
+      description="The URL of the image")
     seller_inputs: SellerInputs = Field(..., description="The inputs from the seller")
     config: Config = Field(..., description="The config for the content")
 
