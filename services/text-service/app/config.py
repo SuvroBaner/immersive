@@ -18,17 +18,34 @@ class Settings(BaseSettings):
     default_provider: str = "gemini"
     
     # Mock mode for testing
-    mock_mode: bool = False # True
+    mock_mode: bool = True # True
     
-    # API Keys - pydantic_settings automatically maps GOOGLE_API_KEY env var to this field
-    # It converts env var names to lowercase, so GOOGLE_API_KEY -> google_api_key
-    google_api_key: Optional[str] = None
+    # Generic API keys map, one place to define per-provider keys.
+    # Can be overridden from env using API_KEYS__<PROVIDER>=value (see env_nested_delimiter below).
+    api_keys: Dict[str, Optional[str]] = {
+        "gemini": None,
+        "openai": None,
+        "huggingface": None
+    }
     
     # Provider-specific settings
+    # Add entries for multiple providers; each can have model_name and api_key.
+    # You can override nested values via env using the delimiter below, e.g.:
+    #   PROVIDER_SETTINGS__GEMINI__API_KEY=xxx
+    #   PROVIDER_SETTINGS__OPENAI__MODEL_NAME=gpt-4o-mini
     provider_settings: Dict[str, Dict[str, Any]] = {
         "gemini": {
-            "model_name": "gemini-2.5-flash"
+            "model_name": "models/gemini-2.5-flash",
+            "api_key": None
         },
+        "openai": {
+            "model_name": "gpt-4o-mini",
+            "api_key": None
+        },
+        "huggingface": {
+            "model_name": "distilbert-base-uncased",
+            "api_key": None
+        }
     }
     
     model_config = SettingsConfigDict(
@@ -37,7 +54,8 @@ class Settings(BaseSettings):
         env_file=str(_ROOT_DIR / ".env"),
         env_file_encoding="utf-8",
         extra="ignore",  # ignore unexpected env vars safely
-        case_sensitive=False  # Allow case-insensitive env var matching
+        case_sensitive=False,  # Allow case-insensitive env var matching
+        env_nested_delimiter="__"  # Enable nested overrides for provider_settings and api_keys
     )
 
 @lru_cache()

@@ -43,20 +43,12 @@ async def create_product_content(
         # use specified provider or default from settings
         provider_name = provider or settings.default_provider
 
-        # Get provider instance from factory
-        # Pass mock_mode from settings - if True, factory will return MockProvider
-        # Also pass API key from settings if available (check both field names)
-        # Also check os.environ directly as fallback
-        import os
-        api_key = (
-            getattr(settings, "GOOGLE_API_KEY", None) 
-            or getattr(settings, "google_api_key", None)
-            or os.environ.get("GOOGLE_API_KEY")
-        )
+        # Get provider instance from factory. The factory will resolve API keys
+        # based on provider and settings (including environment variables).
         ai_provider = ModelProviderFactory.get_provider(
             provider_name = provider_name,
             mock_mode = settings.mock_mode,
-            api_key = api_key,
+            settings = settings,
             category = request.seller_inputs.category if hasattr(request.seller_inputs, "category") else None,
             platform = request.config.target_platform if hasattr(request.config, "target_platform") else None
         )
