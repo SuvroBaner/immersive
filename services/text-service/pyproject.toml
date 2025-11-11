@@ -17,6 +17,7 @@ dependencies = [
     "requests",
     "Pillow",
     "google-generativeai>=0.8.5",
+    "pydantic-settings>=2.12.0",
 ]
 
 # --- Development Dependencies (New Format) ---
