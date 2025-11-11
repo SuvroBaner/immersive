@@ -1,4 +1,4 @@
-from typing import Dict, Type
+from typing import Dict, Type, Optional
 from .base import AIModelProvider
 from .providers.gemini import GeminiProvider
 from .providers.mock import MockProvider
@@ -12,7 +12,7 @@ class ModelProviderFactory:
     }
 
     @classmethod
-    def get_provider(cls, provider_name: str, mock_mode: bool = False, **kwargs) -> AIModelProvider:
+    def get_provider(cls, provider_name: str, mock_mode: bool = False, api_key: Optional[str] = None, **kwargs) -> AIModelProvider:
         """
         Get an instance of the specified provider.
 
@@ -36,6 +36,10 @@ class ModelProviderFactory:
         if not provider_class:
             supported = ", ".join(cls._providers.keys())
             raise ValueError(f"Unsupported provider: {provider_name}. Supported providers: {supported}")
+
+        # For GeminiProvider, pass api_key if provided
+        if provider_name.lower() == "gemini" and api_key:
+            kwargs["api_key"] = api_key
 
         # Optionally pass kwargs to provider if it supports them
         try:

@@ -45,9 +45,18 @@ async def create_product_content(
 
         # Get provider instance from factory
         # Pass mock_mode from settings - if True, factory will return MockProvider
+        # Also pass API key from settings if available (check both field names)
+        # Also check os.environ directly as fallback
+        import os
+        api_key = (
+            getattr(settings, "GOOGLE_API_KEY", None) 
+            or getattr(settings, "google_api_key", None)
+            or os.environ.get("GOOGLE_API_KEY")
+        )
         ai_provider = ModelProviderFactory.get_provider(
             provider_name = provider_name,
             mock_mode = settings.mock_mode,
+            api_key = api_key,
             category = request.seller_inputs.category if hasattr(request.seller_inputs, "category") else None,
             platform = request.config.target_platform if hasattr(request.config, "target_platform") else None
         )
@@ -76,7 +85,8 @@ async def create_product_content(
         return response
 
     except ValueError as e:
-        # Handle provider-specific errors (like unsupported provider)
+        # Handle provider-specific errors (like unsupported provider or missing API key)
+        # The error message from providers already includes helpful suggestions
         raise HTTPException(
             status_code = 400,
             detail = str(e)
@@ -99,12 +109,18 @@ def list_providers(settings: Settings = Depends(get_settings)):
     try:
         # Get list of registered providers from the factory
         providers = ModelProviderFactory.list_providers()
+        
+        # Check API key status (without exposing the actual key)
+        import os
+        api_key_in_settings = bool(getattr(settings, "GOOGLE_API_KEY", None) or getattr(settings, "google_api_key", None))
+        api_key_in_env = bool(os.environ.get("GOOGLE_API_KEY"))
 
         return {
             "default_provider": settings.default_provider,
             "available_providers": providers,
             "provider_settings": settings.provider_settings,
             "mock_mode": settings.mock_mode,
+            "api_key_configured": api_key_in_settings or api_key_in_env,
             "note": "When mock_mode is True, all requests will use MockProvider regardless of provider selection"
         }
 

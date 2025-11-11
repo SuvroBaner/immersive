@@ -11,17 +11,33 @@ from PIL import Image
 import json
 from io import BytesIO
 import requests
-from typing import Tuple
+from typing import Tuple, Optional
 
 from ..base import AIModelProvider
 from ...models import ContentRequest, GeneratedContent
 from ..prompts.provider_specific.gemini_templates import GEMINI_ECOMMERCE_TEMPLATE
 
 class GeminiProvider(AIModelProvider):
-    def __init__(self):
-        self.api_key = os.environ.get("GOOGLE_API_KEY")
+    def __init__(self, api_key: Optional[str] = None):
+        """
+        Initialize Gemini provider.
+        
+        Args:
+            api_key: Optional API key. If not provided, will try to get from:
+                    1. GOOGLE_API_KEY environment variable
+                    2. Settings.google_api_key (from .env file)
+        """
+        # Try to get API key from parameter first, then environment variable
+        # Note: Settings.google_api_key is passed via factory if available
+        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        
         if not self.api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable not set")
+            raise ValueError(
+                "GOOGLE_API_KEY not found. Please set it as:\n"
+                "- Environment variable: GOOGLE_API_KEY=your_key\n"
+                "- Or in .env file: GOOGLE_API_KEY=your_key\n"
+                "- Or use mock_mode=True to test without API keys"
+            )
 
         genai.configure(api_key = self.api_key)
         self.model_name = "gemini-2.5-flash"
