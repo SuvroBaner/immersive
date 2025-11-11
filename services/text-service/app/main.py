@@ -26,7 +26,6 @@ def read_root():
 @app.post("/v1/content/generate",
           response_model = ContentResponse,
           tags = ["Content Generation"])
-
 async def create_product_content(
     request: ContentRequest,
     provider: Optional[str] = Query(None, description = "AI provider to use (gemini, openai, huggingface)"),
