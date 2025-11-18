@@ -2,63 +2,70 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
-from typing import Dict, Any, Optional
+from typing import Dict, Optional
 from functools import lru_cache
 
-# Directories
-# - _APP_DIR: directory where this config.py file is located (app directory)
-# - _ROOT_DIR: project root assumed to be the parent of app
+# --- Path Setup ---
+# _APP_DIR = app/
+# _ROOT_DIR = services/text-service/
 _APP_DIR = Path(__file__).parent.resolve()
 _ROOT_DIR = _APP_DIR.parent
 
-class Settings(BaseSettings):
-    """Application settings."""
+# --- Type-Safe Provider Configuration ---
+
+class ProviderConfig(BaseSettings):
+    """A type-safe model for a single provider's settings."""
     
-    # Default provider
-    default_provider: str = "gemini"
-    
-    # Mock mode for testing
-    mock_mode: bool = True # True
-    
-    # Generic API keys map, one place to define per-provider keys.
-    # Can be overridden from env using API_KEYS__<PROVIDER>=value (see env_nested_delimiter below).
-    api_keys: Dict[str, Optional[str]] = {
-        "gemini": None,
-        "openai": None,
-        "huggingface": None
-    }
-    
-    # Provider-specific settings
-    # Add entries for multiple providers; each can have model_name and api_key.
-    # You can override nested values via env using the delimiter below, e.g.:
-    #   PROVIDER_SETTINGS__GEMINI__API_KEY=xxx
-    #   PROVIDER_SETTINGS__OPENAI__MODEL_NAME=gpt-4o-mini
-    provider_settings: Dict[str, Dict[str, Any]] = {
-        "gemini": {
-            "model_name": "models/gemini-2.5-flash",
-            "api_key": None
-        },
-        "openai": {
-            "model_name": "gpt-4o-mini",
-            "api_key": None
-        },
-        "huggingface": {
-            "model_name": "distilbert-base-uncased",
-            "api_key": None
-        }
-    }
-    
+    # Use Field(default=None) to allow env vars to set this
+    # e.g., PROVIDER_SETTINGS__GEMINI__API_KEY=...
+    api_key: Optional[str] = Field(default=None)
+    model_name: Optional[str] = None
+
+    # This allows this sub-model to also load from nested env vars
     model_config = SettingsConfigDict(
-        # Prefer .env in project root (outside app). If not present, pydantic will still
-        # read process environment variables. You can also place a copy in app/.env.
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+class Settings(BaseSettings):
+    """
+    Application settings, loaded from .env and environment variables.
+    """
+    
+    # --- Core Settings ---
+    default_provider: str = Field(default="gemini")
+    mock_mode: bool = Field(default=False)
+    
+    # --- Nested Provider-Specific Settings ---
+    # This is now the *single source of truth* for provider config.
+    # Pydantic will load env vars like:
+    # PROVIDER_SETTINGS__GEMINI__API_KEY=xxx
+    # PROVIDER_SETTINGS__GEMINI__MODEL_NAME=models/gemini-1.5-pro
+    provider_settings: Dict[str, ProviderConfig] = Field(
+        default_factory=lambda: {
+            "gemini": ProviderConfig(
+                # This is a clean way to support the well-known alias
+                api_key=os.environ.get("GOOGLE_API_KEY"),
+                model_name="gemini-1.5-flash-latest"
+            ),
+            "openai": ProviderConfig(model_name="gpt-4o-mini"),
+        }
+    )
+
+    model_config = SettingsConfigDict(
+        # Load from .env in the `services/text-service/` directory
         env_file=str(_ROOT_DIR / ".env"),
         env_file_encoding="utf-8",
-        extra="ignore",  # ignore unexpected env vars safely
-        case_sensitive=False,  # Allow case-insensitive env var matching
-        env_nested_delimiter="__"  # Enable nested overrides for provider_settings and api_keys
+        extra="ignore",
+        case_sensitive=False,
+        env_nested_delimiter="__" # For PROVIDER_SETTINGS__GEMINI__...
     )
 
 @lru_cache()
 def get_settings() -> Settings:
-    """Get cached settings instance."""
+    """
+    Get the cached, singleton-like settings instance.
+    This is the function you'll import elsewhere in your app.
+    """
     return Settings()

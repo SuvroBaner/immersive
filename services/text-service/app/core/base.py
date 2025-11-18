@@ -8,6 +8,9 @@ from typing import Tuple
 
 class AIModelProvider(ABC):
     """ Abstract base class for AI model providers """
+    """
+    Defines the single, public contract for content generation.
+    """
 
     @abstractmethod
     async def generate_content(self, request: ContentRequest) -> Tuple[GeneratedContent, str]:
@@ -17,8 +20,8 @@ class AIModelProvider(ABC):
         """
         pass
 
-    @abstractmethod
-    def fetch_image(self, url: str):
-        """ Fetch image from URL in the format required by the provided. """
-        pass
+  # We remove fetch_image from the base class.
+    # It is an internal implementation detail of any provider
+    # that happens to get a URL, not a required part of the
+    # public contract for all providers.
 
