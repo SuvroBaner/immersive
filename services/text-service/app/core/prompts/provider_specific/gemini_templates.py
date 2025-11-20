@@ -1,28 +1,30 @@
-"""Templates optimized for Gemini models."""
-
-# Import from base templates 
-from ..base_templates import ECOMMERCE_COPYWRITER_TEMPLATE
-
-# Gemini works well with structured prompts
-GEMINI_ECOMMERCE_TEMPLATE = ECOMMERCE_COPYWRITER_TEMPLATE + """
-Additional instructions for Gemini:
-- Be concise and factual
-- Focus on visual details from the image
-- Structure the description with short paragraphs
+"""
+Provider-specific prompt templates for Google Gemini.
 """
 
-# Gemini-specific template that leverages its multimodal capabilities
-GEMINI_VISUAL_ANALYSIS_TEMPLATE = """
-Analyze the following product image in detail:
-1. First describe what you see in the image
-2. Note any unique visual characteristics
-3. Identify materials, colors, and textures
-4. Suggest how these visual elements could be highlighted in marketing
-5. Format your response as JSON with the following structure:
-{
-    "visual_description": "string",
-    "unique_features": ["string", "string"],
-    "materials_detected": ["string", "string"],
-    "marketing_angles": ["string", "string"]
-}
+# Import the reusable building blocks
+from ..base_templates import CONTEXT_BLOCK, SELLER_INPUTS_BLOCK
+
+# This is the complete, final prompt for the Gemini provider.
+# It assembles the base blocks with Gemini-specific instructions.
+GEMINI_ECOMMERCE_TEMPLATE = """
+You are an expert e-commerce copywriter. Your task is to generate compelling product content
+based on an image and a few inputs from the seller.
+
+You must respond in a valid JSON format. Do NOT include any text outside of the JSON object.
+The JSON object must match the following schema:
+
+{{
+    "title": "string",
+    "description": "string",
+    "product_facts": ["string", "string", "string"],
+    "blog_snippet_idea": "string"
+}}
+
+""" + CONTEXT_BLOCK + """
+
+""" + SELLER_INPUTS_BLOCK + """
+
+---
+Generate the content based on the seller inputs and attached image.
 """

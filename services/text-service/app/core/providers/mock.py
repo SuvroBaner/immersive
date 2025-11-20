@@ -1,14 +1,12 @@
 """
 Mock Provider for testing and simulation.
 
-This provider returns simulated content without making any API calls.
-Useful for development, testing, and when API keys are not available.
+This provider returns simulated content instantly without making any API calls.
+It is lightweight and has no external network dependencies.
 """
 
 from typing import Tuple
-from PIL import Image
-from io import BytesIO
-import requests
+import asyncio  # Used to simulate a small delay
 
 from ..base import AIModelProvider
 from ...models import ContentRequest, GeneratedContent
@@ -17,33 +15,24 @@ from ...models import ContentRequest, GeneratedContent
 class MockProvider(AIModelProvider):
     """Mock provider that simulates AI content generation without API calls."""
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         """Initialize the mock provider. No API key required."""
+        # We accept **kwargs to harmlessly ignore any config
+        # passed from the factory (like api_key or model_name)
         self.model_name = "mock-model-v1.0"
-    
-    def fetch_image(self, url: str) -> Image.Image:
-        """
-        Fetch image from URL (or create a mock image).
-        In mock mode, we still fetch the image to validate the URL works.
-        """
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            return Image.open(BytesIO(response.content))
-        except Exception as e:
-            # If image fetch fails, create a simple mock image
-            # This allows the mock to work even with invalid URLs
-            return Image.new('RGB', (800, 600), color='lightgray')
     
     async def generate_content(self, request: ContentRequest) -> Tuple[GeneratedContent, str]:
         """
         Generate mock content based on the request.
         Returns realistic-looking content without calling any AI API.
         """
-        # Fetch image (or use mock)
-        image = self.fetch_image(request.image_url)
         
-        # Generate mock content based on seller inputs
+        # Simulate a small amount of non-blocking I/O (e.g., 50ms)
+        # This makes the mock behave more like a real network call
+        # in logs and performance traces.
+        await asyncio.sleep(0.05) 
+        
+        # Generate and return the mock content
         mock_content = self._generate_mock_content(request)
         
         return mock_content, self.model_name
@@ -51,37 +40,24 @@ class MockProvider(AIModelProvider):
     def _generate_mock_content(self, request: ContentRequest) -> GeneratedContent:
         """Generate realistic mock content from request data."""
         
-        # Extract information from request
+        # This helper function is synchronous and CPU-bound, which is perfect.
         item_name = request.seller_inputs.item_name
         materials = request.seller_inputs.materials
         inspiration = request.seller_inputs.inspiration
-        category = request.seller_inputs.category
-        tone = request.config.tone
-        language = request.config.language
-        platform = request.config.target_platform
         
-        # Generate mock title
-        title = f"Handcrafted {item_name} - {category} Collection"
+        title = f"[Mock] Handcrafted {item_name}"
         
-        # Generate mock description
-        description = f"""This exquisite {item_name.lower()} showcases the artistry and craftsmanship that goes into every piece. 
+        description = f"This is a mock description for a {item_name}." \
+                      f" It is made of {materials} and was inspired by {inspiration}." \
+                      f" The request config was: tone={request.config.tone}, lang={request.config.language}."
         
-Crafted with care using {materials.lower()}, this item represents a unique blend of tradition and contemporary design. 
-        
-The inspiration behind this piece comes from {inspiration.lower()}, which is reflected in its distinctive character and charm. Perfect for those who appreciate handmade quality and authentic craftsmanship.
-        
-Whether displayed in your home or given as a gift, this {category.lower()} piece tells a story of passion, creativity, and dedication to the art of making."""
-        
-        # Generate mock product facts
         product_facts = [
-            f"Handcrafted {category.lower()} made with premium {materials.split(',')[0].strip().lower()}",
-            f"Unique design inspired by {inspiration.lower()}",
-            f"One-of-a-kind piece, no two items are exactly alike",
-            f"Perfect for {platform} showcasing and presentation"
+            f"Fact 1: Made of {materials.split(',')[0].strip()}",
+            "Fact 2: This is mock data",
+            "Fact 3: Generated instantly"
         ]
         
-        # Generate mock blog snippet
-        blog_snippet = f"Discover the story behind this stunning {item_name.lower()}. Learn how {inspiration.lower()} inspired the creation of this beautiful {category.lower()} piece, and explore the craftsmanship that makes each item unique."
+        blog_snippet = f"Blog snippet idea for {item_name}."
         
         return GeneratedContent(
             title=title,
@@ -89,4 +65,3 @@ Whether displayed in your home or given as a gift, this {category.lower()} piece
             product_facts=product_facts,
             blog_snippet_idea=blog_snippet
         )
-

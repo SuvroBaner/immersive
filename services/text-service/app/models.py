@@ -6,11 +6,14 @@ GenerateText Request Body
 1. POST /v1/content/generate
 This single endpoint takes all the seller's simple inputs and the URL of the newly-processed image, then returns the generated text.
 Method: POST
-Request Body: application/json
-Request:
-JSON
-{
-  "image_url": "https://s3.your-bucket.com/processed/user-123/img-a1b2c3d4.png",
+Request Body
+
+curl -X 'POST' \
+  'http://127.0.0.1:8000/v1/content/generate' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "image_url": "https://images.unsplash.com/photo-1604264726154-26480e76f4e1?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2xheSUyMHBvdHxlbnwwfHwwfHx8MA%3D%3D&fm=jpg&q=60&w=3000",
   "seller_inputs": {
     "item_name": "Clay Pot",
     "materials": "Natural terracotta clay, white paint",
@@ -22,23 +25,28 @@ JSON
     "language": "en-IN",
     "target_platform": "web"
   }
-}
+}'
 
 Response (HTTP 200 OK): The response is the complete, structured content, ready for the frontend to display.
-JSON
+
 {
   "generated_content": {
-    "title": "Handcrafted 'Rainy Day' Terracotta Pot with Delicate White Motifs",
-    "description": "Capture the fresh, earthy feeling of a rainy day with this one-of-a-kind terracotta pot. Hand-shaped from natural clay... the seller, inspired by their garden, has adorned it with delicate white patterns reminiscent of raindrops...",
+    "title": "Handcrafted Clay Pot - Pottery Collection",
+    "description": "This exquisite clay pot showcases the artistry and craftsmanship that goes into every piece. \n        \nCrafted with care using natural terracotta clay, white paint, this item represents a unique blend of tradition and contemporary design. \n        \nThe inspiration behind this piece comes from made this during the rainy season, inspired by my garden, which is reflected in its distinctive character and charm. Perfect for those who appreciate handmade quality and authentic craftsmanship.\n        \nWhether displayed in your home or given as a gift, this pottery piece tells a story of passion, creativity, and dedication to the art of making.",
     "product_facts": [
-      "Terracotta (or 'baked earth') is a porous clay, perfect for plant health.",
-      "This item is handcrafted, meaning no two pieces are exactly alike.",
-      "Sourced directly from a household artist."
+      "Handcrafted pottery made with premium natural terracotta clay",
+      "Unique design inspired by made this during the rainy season, inspired by my garden",
+      "One-of-a-kind piece, no two items are exactly alike",
+      "Perfect for web showcasing and presentation"
     ],
-    "blog_snippet_idea": "The Rise of Artisan Pottery: A Look at 'Crafts of India' Seller..."
+    "blog_snippet_idea": "Discover the story behind this stunning clay pot. Learn how made this during the rainy season, inspired by my garden inspired the creation of this beautiful pottery piece, and explore the craftsmanship that makes each item unique."
   },
-  "ai_model_used": "gemini-1.5-pro",
-  "latency_ms": 8450
+  "ai_model_used": "mock-model-v1.0",
+  "latency_ms": 605.3879261016846,
+  "metadata": {
+    "provider": "mock",
+    "model": "mock-model-v1.0"
+  }
 }
 
 """
