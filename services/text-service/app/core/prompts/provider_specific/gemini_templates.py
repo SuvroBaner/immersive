@@ -7,7 +7,7 @@ from ..base_templates import CONTEXT_BLOCK, SELLER_INPUTS_BLOCK
 
 # This is the complete, final prompt for the Gemini provider.
 # It assembles the base blocks with Gemini-specific instructions.
-GEMINI_ECOMMERCE_TEMPLATE = f"""
+GEMINI_ECOMMERCE_TEMPLATE = """
 You are an expert e-commerce copywriter. Your task is to generate compelling product content
 based on an image and a few inputs from the seller.
 
@@ -21,9 +21,9 @@ The JSON object must match the following schema:
     "blog_snippet_idea": "string"
 }}
 
-{CONTEXT_BLOCK}
+""" + CONTEXT_BLOCK + """
 
-{SELLER_INPUTS_BLOCK}
+""" + SELLER_INPUTS_BLOCK + """
 
 ---
 Generate the content based on the seller inputs and attached image.

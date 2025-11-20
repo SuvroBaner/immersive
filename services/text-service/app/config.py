@@ -14,14 +14,13 @@ _ROOT_DIR = _APP_DIR.parent
 # --- Type-Safe Provider Configuration ---
 
 class ProviderConfig(BaseSettings):
-    """A type-safe model for a single provider's settings."""
+    """A type-safe model for a single provider's settings. 
+    Keys are loaded via Pydantic, e.g., PROVIDER_SETTINGS__GEMINI__API_KEY.
+    """
     
-    # Use Field(default=None) to allow env vars to set this
-    # e.g., PROVIDER_SETTINGS__GEMINI__API_KEY=...
     api_key: Optional[str] = Field(default=None)
     model_name: Optional[str] = None
 
-    # This allows this sub-model to also load from nested env vars
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
         case_sensitive=False,
@@ -38,18 +37,18 @@ class Settings(BaseSettings):
     mock_mode: bool = Field(default=False)
     
     # --- Nested Provider-Specific Settings ---
-    # This is now the *single source of truth* for provider config.
-    # Pydantic will load env vars like:
-    # PROVIDER_SETTINGS__GEMINI__API_KEY=xxx
-    # PROVIDER_SETTINGS__GEMINI__MODEL_NAME=models/gemini-1.5-pro
     provider_settings: Dict[str, ProviderConfig] = Field(
         default_factory=lambda: {
             "gemini": ProviderConfig(
-                # This is a clean way to support the well-known alias
-                api_key=os.environ.get("GOOGLE_API_KEY"),
-                model_name="gemini-1.5-flash-latest"
+                # API key is now loaded solely by Pydantic from env/file.
+                # We set it to None as a default, letting the environment override it.
+                api_key=None,
+                model_name="gemini-2.5-flash"
             ),
-            "openai": ProviderConfig(model_name="gpt-4o-mini"),
+            "openai": ProviderConfig(
+                api_key=None,
+                model_name="gpt-4o-mini"
+            ),
         }
     )
 

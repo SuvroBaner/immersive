@@ -1,5 +1,9 @@
 """
 Implement the Provider Class - Gemini (simplified & non-blocking)
+
+The provider's job is to trust the factory. It should no longer contain any logic for checking os.environ.get(). 
+If the factory fails to supply a key, the provider should raise an error immediately.
+
 """
 
 import os
@@ -35,11 +39,12 @@ class GeminiProvider(AIModelProvider):
 
             model_name: The specific Gemini model to use
         """
-        self.api_key = api_key or os.environ.get("GOOGLE_API_KEY")
+        self.api_key = api_key
         
         if not self.api_key:
             raise ValueError(
-                "GOOGLE_API_KEY not found. Please set it as an environment variable."
+                "Gemini API key not supplied by factory. For configurable deployment, "
+                "please set the environment variable PROVIDER_SETTINGS__GEMINI__API_KEY."
             )
 
         ## genai.configure is global
