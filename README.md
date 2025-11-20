@@ -1,17 +1,43 @@
-# Immersive Craft AI Platform
+# 🎨 Immersive Craft AI Platform
 
-An AI-powered platform for household artists and craftspeople to professionally showcase and sell their creative items. This repository contains the backend microservices, starting with the **Immersive Text Generator** — a multimodal AI service that generates professional product descriptions from images and seller inputs.
+![Python](https://img.shields.io/badge/python-3.10+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.109+-009688.svg)
+![Pydantic](https://img.shields.io/badge/Pydantic-v2-e92063.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+
+> **Bridge the gap between handmade quality and professional online presentation.**
+
+The **Immersive Craft AI Platform** empowers household artists to showcase their work professionally. This repository houses the **Text Service**, a high-performance microservice that uses Multimodal AI to transform raw images and simple seller notes into evocative, SEO-ready product descriptions.
+
+---
+
+## ✨ Key Features
+
+* **🧠 Multimodal AI:** Analyzes visual cues (images) combined with text inputs using **Google Gemini**.
+* **🔌 Provider Factory Pattern:** flexible architecture allowing hot-swapping of AI backends (Gemini, OpenAI, etc.) via configuration.
+* **⚡ High Performance:** Fully asynchronous (non-blocking) I/O using `httpx` and FastAPI.
+* **🛡️ Robust Configuration:** Type-safe settings management using **Pydantic Settings** with nested environment variable support.
+* **🧪 Developer Friendly:** Built-in **Mock Mode** for zero-cost testing and rapid UI development.
 
 ---
 
 ## 🏗️ Architecture
 
-The platform is built as a collection of microservices, with the `text-service` implementing a **provider factory pattern** that supports multiple AI providers:
+The service implements the **Strategy Pattern**. A central Factory determines which AI Provider to instantiate based on runtime configuration, ensuring a unified interface (`AIModelProvider`) regardless of the underlying model.
 
-- **Gemini** (Google) - Multimodal AI with vision capabilities
-- **Mock** - For testing and development without API calls
-
-The service uses a strategy pattern where each provider implements the same interface, allowing seamless switching between AI backends through configuration.
+```mermaid
+graph LR
+    Client[Client App] -->|POST Request| API[FastAPI Endpoint]
+    API -->|Get Provider| Factory[Provider Factory]
+    Factory -->|Read Config| Settings[Settings / .env]
+    
+    Factory -->|Instantiate| Strategy{Strategy Selection}
+    
+    Strategy -->|Default| Gemini[Gemini Provider]
+    Strategy -->|Debug| Mock[Mock Provider]
+    
+    Gemini -->|Async Call| Google[Google Gemini API]
+    Mock -->|Simulate| Local[Local Response]
 
 ---
 
