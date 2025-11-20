@@ -38,6 +38,7 @@ graph LR
     
     Gemini -->|Async Call| Google[Google Gemini API]
     Mock -->|Simulate| Local[Local Response]
+```
 
 ---
 
