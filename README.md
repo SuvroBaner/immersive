@@ -47,48 +47,49 @@ graph LR
 ### Prerequisites
 
 - Python 3.10 or higher
+```bash
+python3 --version
+```
 - [uv](https://github.com/astral-sh/uv) package manager (recommended) or `pip`
+
 - A Google API key for Gemini (get one from [Google AI Studio](https://makersuite.google.com/app/apikey))
 
 ### Installation
 
 1. **Clone the repository** (if not already done)
+    ```bash
+    git clone https://github.com/SuvroBaner/immersive
+    cd immersive/services/text-service
+    ```
 
-2. **Create and activate a virtual environment**
+2. **Install packages & dependencies (this will automatically create and manage the virtual environment)**
+    ```bash
+    # Using uv (recommended)
+    uv sync
+    source .venv/bin/activate  # On macOS/Linux
+    # .venv\Scripts\Activate.ps1  # On Windows PowerShell
+    ```
 
-   ```bash
-   # Using uv (recommended)
-   uv venv
-   source .venv/bin/activate  # On macOS/Linux
-   # .venv\Scripts\Activate.ps1  # On Windows PowerShell
-   ```
-
-   Or using standard Python:
+    Or using standard Python:
 
    ```bash
    python -m venv .venv
    source .venv/bin/activate
    ```
 
-3. **Install dependencies**
-
-   ```bash
-   # Using uv
-   cd services/text-service
-   uv pip install -e .
-   
-   # Or using pip
-   pip install -e services/text-service/
-   ```
-
-4. **Configure environment variables**
+3. **Configure environment variables**
 
    Create a `.env` file in `services/text-service/`:
 
    ```bash
-   cd services/text-service
-   nano .env  # or use your preferred editor
+   touch .env  # or use your preferred editor
    ```
+
+   Make a copy of example.env
+   ```bash
+   # Create .env file
+    cp example.env .env
+    ```
 
    Add your configuration:
 
@@ -99,22 +100,23 @@ graph LR
    # Enable mock mode for testing (set to true to bypass API calls)
    MOCK_MODE=false
    
-   # Provider-specific settings
+   # Provider-specific settings (Gemini)
    # Note: Use double underscores (__) to nest settings
    PROVIDER_SETTINGS__GEMINI__API_KEY=your_google_api_key_here
    PROVIDER_SETTINGS__GEMINI__MODEL_NAME=gemini-2.5-flash
+
+   # OPENAI (for future use/testing)
+   # PROVIDER_SETTINGS__OPENAI__API_KEY=sk-yyy
+   # PROVIDER_SETTINGS__OPENAI__MODEL_NAME=gpt-4o-mini
    ```
 
    **Important:** The nested configuration format (`PROVIDER_SETTINGS__GEMINI__API_KEY`) is required. This allows Pydantic to properly map environment variables to the nested `ProviderConfig` structure.
 
-5. **Run the service**
+4. **Run the Server**
 
    ```bash
-   # From the project root
-   uvicorn services.text-service.app.main:app --reload --port 8000
-   
-   # Or from services/text-service/
-   uvicorn app.main:app --reload
+   # From services/text-service/
+   uvicorn app.main:app --reload --port 8000
    ```
 
    The API will be available at `http://127.0.0.1:8000`
@@ -141,6 +143,7 @@ Health check endpoint.
 
 #### `GET /v1/providers`
 List available AI providers and their configuration status.
+Useful for debugging if your .env keys are being loaded correctly (without leaking the actual keys).
 
 **Response:**
 ```json
@@ -158,7 +161,7 @@ List available AI providers and their configuration status.
 ```
 
 #### `POST /v1/content/generate`
-Generate product descriptions, titles, and marketing content from an image and seller inputs.
+Generate product descriptions, titles, and structured marketing content from an image and seller inputs.
 
 **Query Parameters:**
 - `provider` (optional): Override the default provider (e.g., `?provider=gemini`)
@@ -225,28 +228,6 @@ curl -X POST "http://127.0.0.1:8000/v1/content/generate?provider=gemini" \
 
 ---
 
-## ⚙️ Configuration
-
-### Environment Variables
-
-All configuration is managed through environment variables or a `.env` file in `services/text-service/`:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DEFAULT_PROVIDER` | Default AI provider to use | `gemini` |
-| `MOCK_MODE` | Enable mock mode (bypasses API calls) | `false` |
-| `PROVIDER_SETTINGS__GEMINI__API_KEY` | Google Gemini API key | `None` |
-| `PROVIDER_SETTINGS__GEMINI__MODEL_NAME` | Gemini model to use | `gemini-2.5-flash` |
-
-### Mock Mode
-
-Set `MOCK_MODE=true` in your `.env` file to enable mock mode. This bypasses all API calls and returns instantly generated sample content, useful for:
-- Testing the API structure without consuming API credits
-- Development when API keys are not available
-- Integration testing
-
----
-
 ## 🏗️ Project Structure
 
 ```
@@ -276,24 +257,17 @@ immersive/
 
 ---
 
-## 🔧 Development
+## 🔧 Developer Guide
 
-### Adding a New Provider
+### Adding a New AI Provider
 
-1. Create a new provider class in `app/core/providers/` that inherits from `AIModelProvider`
-2. Implement the `generate_content()` method
-3. Register it in `app/core/factory.py`:
+The platform is designed to be extensible. To add a new provider (e.g., Anthropic):
 
-```python
-_providers: Dict[str, Type[AIModelProvider]] = {
-    "gemini": GeminiProvider,
-    "mock": MockProvider,
-    "your_provider": YourProvider,  # Add here
-}
-```
-
-4. Update `app/config.py` to include default configuration in `provider_settings`
-5. Add environment variable support following the `PROVIDER_SETTINGS__PROVIDER__KEY` pattern
+1. **Create a new provider class:** Create app/core/providers/anthropic.py inheriting from AIModelProvider.
+2. **Implement Interface:** Implement the generate_content method.
+3. **Register:** Add the class to the _providers dict in app/core/factory.py.
+4. **Configure** dd a new ProviderConfig entry in app/config.py defaults.
+5. **Add to the .env file:** Add environment variable support following the `PROVIDER_SETTINGS__PROVIDER__KEY` pattern
 
 ### Running Tests
 
@@ -309,7 +283,7 @@ pytest
 ### `api_key_configured: false` in `/v1/providers`
 
 This means your API key isn't being loaded. Ensure:
-- Your `.env` file uses the nested format: `PROVIDER_SETTINGS__GEMINI__API_KEY=your_key`
+- Your `.env` file uses the nested format: `PROVIDER_SETTINGS__GEMINI__API_KEY=your_key` (double underscore)
 - The `.env` file is in `services/text-service/` directory
 - The service has been restarted after adding the key
 
@@ -320,12 +294,19 @@ Add the model name to your `.env`:
 PROVIDER_SETTINGS__GEMINI__MODEL_NAME=gemini-2.5-flash
 ```
 
-### 500 Error on `/v1/content/generate`
+### 500 Internal Server Error on `/v1/content/generate`
 
 Check the service logs for detailed error messages. Common issues:
 - Invalid or missing API key
 - Network issues fetching the image URL
 - Provider-specific API errors
+- Template/Prompt Error : Check logs. Usually caused by missing double braces {{ }} in JSON prompt templates.
+
+### ModuleNotFoundError
+
+Virtual Environment Issues
+- Ensure you ran source .venv/bin/activate
+- Ensure you do uv sync
 
 ---
 
