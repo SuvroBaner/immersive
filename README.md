@@ -7,23 +7,41 @@
 
 > **Bridge the gap between handmade quality and professional online presentation.**
 
-The **Immersive Craft AI Platform** empowers household artists to showcase their work professionally. This repository houses the **Text Service**, a high-performance microservice that uses Multimodal AI to transform raw images and simple seller notes into evocative, SEO-ready product descriptions.
+The **Immersive Craft AI Platform** empowers household artists to showcase their work professionally. 
+This repository houses the backend microservices ecosystem, currently featuring the **Text Service** (Live) and the **Image Service** (In Development).
 
 ---
 
-## ✨ Key Features
+## 🧩 Microservices Overview
 
-* **🧠 Multimodal AI:** Analyzes visual cues (images) combined with text inputs using **Google Gemini**.
-* **🔌 Provider Factory Pattern:** flexible architecture allowing hot-swapping of AI backends (Gemini, OpenAI, etc.) via configuration.
-* **⚡ High Performance:** Fully asynchronous (non-blocking) I/O using `httpx` and FastAPI.
-* **🛡️ Robust Configuration:** Type-safe settings management using **Pydantic Settings** with nested environment variable support.
-* **🧪 Developer Friendly:** Built-in **Mock Mode** for zero-cost testing and rapid UI development.
+The platform is built on a scalable microservices architecture, separating lightweight CPU tasks from heavy GPU processing.
+
+### 1. ✍️ Immersive Text Service (Live)
+* **Status:** ✅ Production Ready
+* **Role:** The "AI Storyteller"
+* **Tech:** FastAPI, Async I/O, Google Gemini (Multimodal)
+* **Function:** Transforms raw images and simple seller notes into evocative, SEO-ready product descriptions in milliseconds.
+
+### 2. 📸 Immersive Image Service (In Development)
+* **Status:** 🏗️ Construction in Progress
+* **Role:** The "AI Photographer"
+* **Tech:** Python, Celery, Redis, Kubernetes (GKE), KEDA
+* **Function:** Asynchronous GPU pipeline for professional image correction:
+    * Perspective Correction
+    * Shadow Removal & Lighting Enhancement
+    * AI Super-Resolution (Upscaling)
+    * Background Manipulation
+    * Intelligent Cropping
+    * Interactive 3D Model
 
 ---
 
 ## 🏗️ Architecture
 
-The service implements the **Strategy Pattern**. A central Factory determines which AI Provider to instantiate based on runtime configuration, ensuring a unified interface (`AIModelProvider`) regardless of the underlying model.
+The platform uses a **Strategy Pattern** for flexible AI providers and an asynchronous event-driven architecture for handling heavy workloads.
+
+### Text Service Workflow (Strategy Pattern)
+A central Factory determines which AI Provider to instantiate based on runtime configuration, ensuring a unified interface (`AIModelProvider`) regardless of the underlying model.
 
 ```mermaid
 graph LR
@@ -39,6 +57,18 @@ graph LR
     Gemini -->|Async Call| Google[Google Gemini API]
     Mock -->|Simulate| Local[Local Response]
 ```
+
+---
+
+## ✨ Key Features
+
+The **Text Service**, a high-performance microservice that uses Multimodal AI to transform raw images and simple seller notes into evocative, SEO-ready product descriptions.
+
+* **🧠 Multimodal AI:** Analyzes visual cues (images) combined with text inputs using **Google Gemini**.
+* **🔌 Provider Factory Pattern:** flexible architecture allowing hot-swapping of AI backends (Gemini, OpenAI, etc.) via configuration.
+* **⚡ High Performance:** Fully asynchronous (non-blocking) I/O using `httpx` and FastAPI.
+* **🛡️ Robust Configuration:** Type-safe settings management using **Pydantic Settings** with nested environment variable support.
+* **🧪 Developer Friendly:** Built-in **Mock Mode** for zero-cost testing and rapid UI development.
 
 ---
 
