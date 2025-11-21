@@ -60,6 +60,7 @@ graph LR
 
 ### Image Service Workflow 
 Asynchronous GPU pipeline for professional image correction
+
 Work in Progress (stay tuned)
 
 ---
