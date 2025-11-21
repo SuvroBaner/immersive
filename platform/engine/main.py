@@ -196,5 +196,9 @@ if __name__ == "__main__":
     app()
 
 # run the engine
+# CI/CD: Render Kubernetes manifests (canvas generate).
 # From project root /immersive
 #./platform/engine/.venv/bin/python platform/engine/main.py generate services/text-service
+
+# Local Dev: Validate the yaml and run the app locally (canvas up).
+
