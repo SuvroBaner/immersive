@@ -1,0 +1,24 @@
+# This file tells Canvas how to verify and build the app.
+
+version: "v1"
+kind: "CanvasPipeline"
+
+stages:
+  lint:
+    enabled: true
+    tool: "ruff"
+  
+  test:
+    enabled: true
+    tool: "pytest"
+    coverage_threshold: 80
+  
+  security:
+    sast_scan: true       # Static Application Security Testing (SonarQube)
+    dependency_scan: true # Check for vulnerable pip packages
+    container_scan: true  # Check Docker image for OS vulnerabilities (Trivy)
+
+  build:
+    dockerfile_path: "./Dockerfile"
+    context: "."
+    registry: "123456789.dkr.ecr.us-east-1.amazonaws.com/immersive"

@@ -1,0 +1,15 @@
+[project]
+name = "canvas-engine"
+version = "0.1.0"
+description = "The orchestrator that turns Canvas Blueprints into Kubernetes Manifests."
+requires-python = ">=3.10"
+dependencies = [
+    "typer[all]", # for a beautiful CLI
+    "pyyaml", # to read Blueprints
+    "jinja2", # to generate K8s YAMLs
+    "rich"  # For beautiful terminal output
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
