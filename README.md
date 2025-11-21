@@ -355,6 +355,18 @@ See [LICENSE](LICENSE) file for details.
 
 ---
 
+## 🛠️ Engineering Platform
+
+We believe in a "Golden Path" for development. Instead of managing complex Kubernetes manifests manually, our engineering team uses **Canvas**, an internal developer platform that abstracts infrastructure complexity.
+
+* **Standardization:** Every microservice (Text, Image) is defined by a simple `canvas.yaml` blueprint.
+* **Automation:** The Canvas Engine handles security hardening, logging sidecars, and scaling automatically.
+* **Velocity:** Developers focus on code, not clusters.
+
+👉 **[Read the full Canvas Platform Documentation](platform/README.md)**
+
+---
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
