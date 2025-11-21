@@ -1,0 +1,43 @@
+# This file tells Canvas what the app needs to run.
+
+version: "v1"
+kind: "CanvasService"
+metadata:
+  name: "text-service"
+  description: "Generates immersive text descriptions from raw images and plain seller inputs"
+  owner: "backend-team"
+  cost_center: "ai-products"
+
+spec:
+  runtime: "python:3.12-slim"
+  type: "backend-api" # Influences ingress and security groups
+  
+  compute:
+    cpu_request: "500m"  # Half a core guaranteed
+    cpu_limit: "1000m"   # Burst up to 1 core
+    memory_request: "512Mi"
+    memory_limit: "1Gi"
+    gpu: false           # Switch to true for image-service later
+    
+    autoscaling:
+      enabled: true
+      min_replicas: 2
+      max_replicas: 10
+      target_cpu_utilization: 75
+
+  networking:
+    port: 8000
+    public_access: true
+    health_path: "/"
+    ingress_path: "/v1/text"
+
+  env:
+    # Non-sensitive configuration
+    DEFAULT_PROVIDER: "gemini"
+    MOCK_MODE: "false"
+    LOG_LEVEL: "info"
+
+  secrets:
+    # These map to AWS Secrets Manager keys
+    - key: "GOOGLE_API_KEY"
+      source: "immersive/prod/text-service/google-key"

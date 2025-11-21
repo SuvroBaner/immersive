@@ -1,0 +1,17 @@
+# Universal Service Template
+apiVersion: v1
+kind: Service
+metadata:
+  name: text-service
+  namespace: backend-team
+  labels:
+    app: text-service
+    managed-by: canvas-engine
+spec:
+  type: ClusterIP
+  selector:
+    app: text-service
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP

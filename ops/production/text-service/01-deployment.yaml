@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: text-service
+  namespace: production
+  labels:
+    app: text-service
+    owner: backend-team
+    # Cost center is optional, so we default if missing
+    cost-center: ai-products
+    managed-by: canvas-engine
+spec:
+  # Autoscaling starts at the minimum replica count
+  replicas: 2
+  selector:
+    matchLabels:
+      app: text-service
+  template:
+    metadata:
+      labels:
+        app: text-service
+        tier: backend
+    spec:
+      containers:
+        - name: text-service
+          # image_repo and image_tag are injected by the Engine at runtime
+          image: 123456789.dkr.ecr.us-east-1.amazonaws.com/immersive/text-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+          
+          # --- Resource Guardrails (Security & Stability) ---
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+          # --- Health Checks (Reliability) ---
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          
+          # --- Environment Variables ---
+          env:
+            # Standard Platform Env Vars
+            - name: PORT
+              value: "8000"
+            
+            # User-defined Env Vars from canvas.yaml
+            - name: DEFAULT_PROVIDER
+              value: "gemini"
+            - name: MOCK_MODE
+              value: "false"
+            - name: LOG_LEVEL
+              value: "info"
+            
+            # Secrets would be injected here via ExternalSecretsOperator
+            # (Simplified for this phase)

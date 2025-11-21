@@ -1,0 +1,17 @@
+# Universal Service Template
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ metadata.name }}
+  namespace: {{ metadata.owner }}
+  labels:
+    app: {{ metadata.name }}
+    managed-by: canvas-engine
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ metadata.name }}
+  ports:
+    - port: 80
+      targetPort: {{ spec.networking.port }}
+      protocol: TCP
