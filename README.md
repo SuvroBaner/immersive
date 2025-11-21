@@ -347,11 +347,6 @@ Virtual Environment Issues
 - Ensure you ran source .venv/bin/activate
 - Ensure you do uv sync
 
----
-
-## 📝 License
-
-See [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -364,6 +359,12 @@ We believe in a "Golden Path" for development. Instead of managing complex Kuber
 * **Velocity:** Developers focus on code, not clusters.
 
 👉 **[Read the full Canvas Platform Documentation](platform/README.md)**
+
+---
+
+## 📝 License
+
+See [LICENSE](LICENSE) file for details.
 
 ---
 
