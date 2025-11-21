@@ -58,7 +58,7 @@ graph LR
     Mock -->|Simulate| Local[Local Response]
 ```
 
-### Image Service Workflow 
+### Image Service Workflow (Async GPU Pipeline)
 Asynchronous GPU pipeline for professional image correction
 
 Work in Progress (stay tuned)
