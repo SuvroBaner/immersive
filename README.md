@@ -58,6 +58,9 @@ graph LR
     Mock -->|Simulate| Local[Local Response]
 ```
 
+### Text Service Workflow (Asynchronous GPU pipeline for professional image correction)
+Work in Progress (stay tuned)
+
 ---
 
 ## ✨ Key Features
@@ -69,6 +72,9 @@ The **Text Service**, a high-performance microservice that uses Multimodal AI to
 * **⚡ High Performance:** Fully asynchronous (non-blocking) I/O using `httpx` and FastAPI.
 * **🛡️ Robust Configuration:** Type-safe settings management using **Pydantic Settings** with nested environment variable support.
 * **🧪 Developer Friendly:** Built-in **Mock Mode** for zero-cost testing and rapid UI development.
+
+The **Image Service**, an asynchronous GPU pipeline for professional image correction
+Work in Progress (stay tuned)
 
 ---
 
@@ -156,7 +162,7 @@ python3 --version
 
 ---
 
-## 📚 API Documentation
+## 📚 API Documentation (Text Service)
 
 ### Endpoints
 
@@ -259,6 +265,7 @@ curl -X POST "http://127.0.0.1:8000/v1/content/generate?provider=gemini" \
 ---
 
 ## 🏗️ Project Structure
+The repository is structured to support multiple microservices in a monorepo format.
 
 ```
 immersive/
@@ -289,7 +296,7 @@ immersive/
 
 ## 🔧 Developer Guide
 
-### Adding a New AI Provider
+### Adding a New AI Provider (Text Service)
 
 The platform is designed to be extensible. To add a new provider (e.g., Anthropic):
 
