@@ -1,24 +1,62 @@
 # This file tells Canvas how to verify and build the app.
-
+# 1. Platform Contract Versioning
+# Allows the Canvas Engine to evolve (e.g., support "v2" pipelines later) without breaking old services.
 version: "v1"
 kind: "CanvasPipeline"
 
+# Global Configuration
+meta:
+  project_id: "immersive-platform"
+  # Defines how we tag images (git-sha is safest for automated CD)
+  versioning: "git-sha"
+
 stages:
+  # 2. Code Quality Gate (Fast Feedback)
+  # Runs before expensive tests/builds. Failing here saves compute time.
   lint:
     enabled: true
-    tool: "ruff"
+    tool: "ruff"     # Python's fastest linter. Good choice for speed.
   
+  # 3.Testing Strategy
   test:
     enabled: true
     tool: "pytest"
+    # Quality Gate: If coverage drops below 80%, the pipeline fails.
+    # This enforces technical debt management automatically
     coverage_threshold: 80
   
+  # 4. The Security Plane (Shift-Left)
+  # These run on every PR, catching vulnerabilities before they reach production.
   security:
-    sast_scan: true       # Static Application Security Testing (SonarQube)
-    dependency_scan: true # Check for vulnerable pip packages
-    container_scan: true  # Check Docker image for OS vulnerabilities (Trivy)
+    sast_scan: true       # Checks source code for secrets/bad patterns (SonarQube)
+    dependency_scan: true # # Checks requirements.txt for known CVEs (Safety/Snyk)
+    container_scan: true  # Checks the final Docker image for OS-level vulns (Trivy)
 
+  # 5. Artifact Generation
   build:
     dockerfile_path: "./Dockerfile"
     context: "."
+    # The destination. In a real setup, the Engine injects the repo prefix,
+    # but defining the registry root here is good for clarity.
     registry: "123456789.dkr.ecr.us-east-1.amazonaws.com/immersive"
+
+# 6. The Delivery Plane (CD)
+# This tells the engine, after building, update those manifests in the ops/ folder.
+deploy:
+    environments:
+      - name: "staging"
+        trigger: "push-to-main"
+        # The Engine generates manifests into ops/staging/text-service
+        manifest_path: "ops/staging" 
+        
+      - name: "production"
+        trigger: "release-tag" # Only deploy when a GitHub Release is created
+        # The Engine generates manifests into ops/production/text-service
+        manifest_path: "ops/production" 
+        # Enforce manual approval in GitHub Actions before running this step
+        approval_required: true
+
+# 7. Notifications
+notifications:
+    on_failure: ["slack-backend-alerts"]
+    on_success: ["slack-deployments"]
