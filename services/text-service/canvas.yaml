@@ -38,9 +38,11 @@ spec:
   # 4. Networking
   networking:
     port: 8000
-    public_access: true  # Engine creates an Ingress (ALB) (Ingress is a way to expose services outside the cluster via HTTP/HTTPS.) + DNS record
+    ingress:
+      enabled: true
+      path: "/v1/text" # Routing rule
+    
     health_path: "/"     # K8s Readiness/Liveness probes
-    ingress_path: "/v1/text" # Routing rule
 
   # 5. Configuration (12-Factor App)
   env:

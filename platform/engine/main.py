@@ -63,31 +63,54 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+# --- 1. Setup & Config ---
+# Typer handles the CLI arguments/commands
 app = typer.Typer(help="Canvas Platform Engine CLI")
 console = Console()
 
-# Configuration constants
+# Defines where to look for .j2 templates
 TEMPLATE_DIR = Path(__file__).parent / "templates"
+# Default Docker registry (would come from CI env in real life)
 DEFAULT_REGISTRY = "123456789.dkr.ecr.us-east-1.amazonaws.com/immersive"
 
+# --- 2. Helper Functions ---
 def load_blueprint(path: Path) -> dict:
-    """Helper: Loads and validates the canvas.yaml file."""
+    """
+    Reads 'canvas.yaml', parses it, and performs basic validation.
+    This is the 'Compiler Front-End'—it checks if the code is valid.
+    """
     blueprint_path = path / "canvas.yaml"
     
     if not blueprint_path.exists():
         console.print(f"[bold red]Error:[/bold red] Blueprint not found at {blueprint_path}")
+        console.print("Are you in the correct service directory?")
         raise typer.Exit(code=1)
         
     try:
         with open(blueprint_path, "r") as f:
             data = yaml.safe_load(f)
+
+        # Guardrail: Ensure we are processing a Canvas Service
         if data.get("kind") != "CanvasService":
             console.print("[bold red]Invalid Blueprint:[/bold red] 'kind' must be 'CanvasService'")
             raise typer.Exit(code=1)
+        
         return data
     except yaml.YAMLError as e:
         console.print(f"[bold red]YAML Parsing Error:[/bold red] {e}")
         raise typer.Exit(code=1)
+
+def render_and_save(env, template_name, context, output_path):
+    """Helper to render a single template and save it."""
+    try:
+        template = env.get_template(template_name)
+        content = template.render(**context)
+        with open(output_path, "w") as f:
+            f.write(content)
+        return True
+    except Exception as e:
+        console.print(f"[red]Failed to render {template_name}: {e}[/red]")
+        return False
 
 @app.command()
 def validate(service_path: Path = typer.Argument(..., help="Path to service folder")):
@@ -96,36 +119,69 @@ def validate(service_path: Path = typer.Argument(..., help="Path to service fold
     name = blueprint['metadata']['name']
     console.print(Panel(f"[bold green]Valid Canvas Blueprint found for service: {name}[/bold green]"))
 
+# --- 3. CLI Commands ---
+
 @app.command()
-def up(service_path: Path = typer.Argument(..., help="Path to service folder")):
-    """🚀 Run the service locally using Docker."""
+def validate(service_path: Path = typer.Argument(..., help="Path to service folder")):
+    """
+    ✅ Verify that a service's canvas.yaml is syntactically correct.
+    """
     blueprint = load_blueprint(service_path)
     name = blueprint['metadata']['name']
+    # In a real platform, you would add Pydantic schema validation here
+    console.print(Panel(f"[bold green]Valid Canvas Blueprint found for service: {name}[/bold green]"))
+
+@app.command()
+def up(service_path: Path = typer.Argument(..., help="Path to service folder")):
+    """
+    🚀 Local Dev: Run the service in Docker, mimicking Prod.
+    """
+    blueprint = load_blueprint(service_path)
+    name = blueprint['metadata']['name']
+    # We assume the port is required in the spec
     port = blueprint['spec']['networking']['port']
     
-    console.print(f"[blue]Canvas Up: Bootstrapping {name}...[/blue]")
+    console.print(f"[blue]Canvas Up: Bootstrapping {name} environment...[/blue]")
     
-    # 1. Build
-    subprocess.run(["docker", "build", "-t", f"{name}:local", "."], cwd=service_path, check=True)
+    # A. Build Phase
+    console.print(f"Building Docker image for [cyan]{name}[/cyan]...")
+    try:
+        subprocess.run(
+            ["docker", "build", "-t", f"{name}:local", "."], 
+            cwd=service_path, 
+            check=True
+        )
+    except subprocess.CalledProcessError:
+        console.print("[bold red]Build Failed![/bold red] Check your Dockerfile.")
+        raise typer.Exit(code=1)
     
-    # 2. Prepare Env
+    # B. Configuration Injection Phase
     docker_env_args = []
+    # 1. Inject Env Vars defined in canvas.yaml
     if 'spec' in blueprint and 'env' in blueprint['spec']:
         for key, value in blueprint['spec']['env'].items():
             docker_env_args.extend(["-e", f"{key}={value}"])
-    
-    # 3. Load Secrets
+            
+    # 2. Inject Secrets from local .env (Simulating AWS Secrets Manager)
     local_env_file = service_path / ".env"
     if local_env_file.exists():
+        console.print(f"Loading local secrets from {local_env_file}")
         docker_env_args.extend(["--env-file", str(local_env_file)])
 
-    # 4. Run
-    console.print(f"[green]Starting on http://localhost:{port}[/green]")
-    cmd = ["docker", "run", "--rm", "-p", f"{port}:{port}", "--name", f"{name}-local"] + docker_env_args + [f"{name}:local"]
+    # C. Run Phase
+    console.print(f"[green]Starting {name} on http://localhost:{port}[/green]")
+    console.print("[dim]Press Ctrl+C to stop[/dim]")
+    
+    cmd = [
+        "docker", "run", "--rm", 
+        "-p", f"{port}:{port}", 
+        "--name", f"{name}-local"
+    ] + docker_env_args + [f"{name}:local"]
+    
     try:
         subprocess.run(cmd)
     except KeyboardInterrupt:
-        console.print("\n[yellow]Stopping...[/yellow]")
+        console.print("\n[yellow]Stopping service...[/yellow]")
 
 @app.command()
 def generate(
@@ -133,7 +189,9 @@ def generate(
     image_tag: str = typer.Option("latest", help="Docker image tag to deploy"),
     output_dir: Path = typer.Option(None, help="Custom output directory for manifests")
 ):
-    """⚙️ CI/CD: Render Kubernetes manifests from the blueprint."""
+    """
+    ⚙️ GitOps: Transform canvas.yaml into Kubernetes manifests.
+    """
     blueprint = load_blueprint(service_path)
     service_name = blueprint['metadata']['name']
     
@@ -143,54 +201,58 @@ def generate(
         console.print(f"[bold red]Template directory not found at {TEMPLATE_DIR}[/bold red]")
         raise typer.Exit(code=1)
         
+    # 1. Setup Template Engine
     env = Environment(loader=FileSystemLoader(TEMPLATE_DIR), trim_blocks=True, lstrip_blocks=True)
     
-    # Prepare Context
+    # 2. Prepare Rendering Context
+    # We merge the blueprint data with CI/CD-specific data (image tags)
     context = {
         **blueprint, 
         "image_repo": f"{DEFAULT_REGISTRY}/{service_name}",
         "image_tag": image_tag
     }
     
-    # Determine Output Directory
+    # 3. Calculate Output Path
     if not output_dir:
+        # Standard GitOps path: ops/production/<service_name>
+        # Assumes we run from the monorepo root
         output_dir = Path("ops/production") / service_name
     
     output_dir.mkdir(parents=True, exist_ok=True)
     
     generated_files = []
 
-    try:
-        # --- 1. Render Deployment ---
-        dep_tpl = env.get_template("deployment.yaml.j2")
-        dep_content = dep_tpl.render(**context)
-        dep_path = output_dir / "01-deployment.yaml"
-        with open(dep_path, "w") as f:
-            f.write(dep_content)
-        generated_files.append(str(dep_path))
+    # --- 4. Rendering Pipeline ---
+    
+    # A. Deployment (Compute)
+    if render_and_save(env, "deployment.yaml.j2", context, output_dir / "01-deployment.yaml"):
+        generated_files.append(str(output_dir / "01-deployment.yaml"))
 
-        # --- 2. Render Service (NEW) ---
-        svc_tpl = env.get_template("service.yaml.j2")
-        svc_content = svc_tpl.render(**context)
-        svc_path = output_dir / "02-service.yaml"
-        with open(svc_path, "w") as f:
-            f.write(svc_content)
-        generated_files.append(str(svc_path))
-            
-    except Exception as e:
-        console.print(f"[bold red]Rendering Failed:[/bold red] {e}")
-        raise typer.Exit(code=1)
+    # B. Service (Internal Networking)
+    if render_and_save(env, "service.yaml.j2", context, output_dir / "02-service.yaml"):
+        generated_files.append(str(output_dir / "02-service.yaml"))
 
-    # Summary Output
+    # C. Ingress (External Networking) - Conditional!
+    # We only generate ingress if the blueprint explicitly asks for it.
+    net_spec = blueprint.get('spec', {}).get('networking', {})
+    ingress_spec = net_spec.get('ingress', {})
+    
+    if ingress_spec: # If ingress section exists
+        # Check if 'enabled' is missing (default to False) or explicitly True
+        if ingress_spec.get('enabled', False): 
+            if render_and_save(env, "ingress.yaml.j2", context, output_dir / "03-ingress.yaml"):
+                generated_files.append(str(output_dir / "03-ingress.yaml"))
+
+    # --- 5. Report Results ---
     table = Table(title="Canvas Manifest Generation")
     table.add_column("Manifest", style="cyan")
-    table.add_column("Path", style="green")
+    table.add_column("Location", style="green")
     
     for file_path in generated_files:
         table.add_row(Path(file_path).name, file_path)
     
     console.print(table)
-    console.print(f"[bold green]✔ Successfully generated GitOps artifacts in {output_dir}[/bold green]")
+    console.print(f"[bold green]✔ GitOps artifacts ready in {output_dir}[/bold green]")
 
 if __name__ == "__main__":
     app()

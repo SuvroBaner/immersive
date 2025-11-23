@@ -1,3 +1,7 @@
+# This is the "Universal Blueprint" of your platform.
+# This file is Governance as Code
+
+# Defines the API version for Deployments in Kubernetes
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -6,11 +10,8 @@ metadata:
   labels:
     app: text-service
     owner: backend-team
-    # Cost center is optional, so we default if missing
-    cost-center: ai-products
     managed-by: canvas-engine
 spec:
-  # Autoscaling starts at the minimum replica count
   replicas: 2
   selector:
     matchLabels:
@@ -19,17 +20,28 @@ spec:
     metadata:
       labels:
         app: text-service
-        tier: backend
     spec:
+      # --- NEW: IAM Identity ---
+      serviceAccountName: text-service-sa
+      
+      # --- NEW: Pulling from Private ECR ---
+      imagePullSecrets:
+        - name: regcred
+
+      # --- NEW: Enforce Non-Root (Matches Dockerfile) ---
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        runAsNonRoot: true
+
       containers:
         - name: text-service
-          # image_repo and image_tag are injected by the Engine at runtime
-          image: 123456789.dkr.ecr.us-east-1.amazonaws.com/immersive/text-service:latest
+          image: 123456789.dkr.ecr.us-east-1.amazonaws.com/immersive/text-service:v1.0.0.0-test
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
           
-          # --- Resource Guardrails (Security & Stability) ---
           resources:
             requests:
               cpu: "500m"
@@ -38,7 +50,6 @@ spec:
               cpu: "1000m"
               memory: "1Gi"
 
-          # --- Health Checks (Reliability) ---
           readinessProbe:
             httpGet:
               path: /
@@ -46,19 +57,20 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
           
-          # --- Environment Variables ---
+          # --- NEW: Liveness Probe (Restarts dead apps) ---
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+
           env:
-            # Standard Platform Env Vars
             - name: PORT
               value: "8000"
-            
-            # User-defined Env Vars from canvas.yaml
             - name: DEFAULT_PROVIDER
               value: "gemini"
             - name: MOCK_MODE
               value: "false"
             - name: LOG_LEVEL
               value: "info"
-            
-            # Secrets would be injected here via ExternalSecretsOperator
-            # (Simplified for this phase)
