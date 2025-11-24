@@ -1,0 +1,120 @@
+name: "CI: Text Service"
+
+# 1. Triggers (When to run?)
+# We only run this workflow when files in the text-service or the platform engine change.
+# This prevents wasted CI minutes on unrelated changes (like documentation updates).
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'services/text-service/**'
+      - 'platform/engine/**'
+  pull_request:
+    paths:
+      - 'services/text-service/**'
+      - 'platform/engine/**'
+
+# 2. Environment Variables
+# Centralized configuration for the entire workflow.
+env:
+  SERVICE_NAME: text-service
+  SERVICE_PATH: services/text-service
+  PYTHON_VERSION: "3.10"
+
+# 3. Permissions
+# Critical: This gives the workflow permission to write back to the repo.
+# This is required for the "GitOps Sync" step later.
+permissions:
+  contents: write
+
+jobs:
+  # --- JOB 1: VERIFY (Quality Gate) ---
+  # This job ensures the code is clean, secure, and functional.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      # Cache dependencies to speed up subsequent runs
+      - name: Install uv (Fast Package Manager)
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install Dependencies
+        run: |
+          cd ${{ env.SERVICE_PATH }}
+          # Install standard dependencies
+          uv pip install --system -r <(uv pip compile pyproject.toml)
+          # Install dev/test dependencies
+          uv pip install --system pytest ruff
+
+      - name: 🔍 Linting (Ruff)
+        # Fail fast if the code style is bad
+        run: |
+          cd ${{ env.SERVICE_PATH }}
+          python -m ruff check .
+
+      - name: 🧪 Unit Tests (Pytest)
+        # Run tests in Mock Mode so we don't hit real APIs
+        env:
+          MOCK_MODE: "true"
+        run: |
+          cd ${{ env.SERVICE_PATH }}
+          python -m pytest
+
+  # --- JOB 2: BUILD & GENERATE (The Engine) ---
+  # This job runs only if 'verify' passes. It builds the artifact and runs the Canvas Engine.
+  build-and-generate:
+    needs: verify
+    if: github.ref == 'refs/heads/main' # Only run on main branch push (not PRs)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Use the automatic token
+
+      # 1. Build Docker Image (Simulation)
+      # In a real setup, you would push this to ECR/GCR.
+      # Here we just verify it builds successfully.
+      - name: 🐳 Build Docker Image
+        run: |
+          docker build -t ${{ env.SERVICE_NAME }}:${{ github.sha }} ${{ env.SERVICE_PATH }}
+
+      # 2. Setup Platform Engine Dependencies
+      - name: Set up Canvas Engine
+        run: |
+          cd platform/engine
+          pip install -e . # Install 'canvas' command globally in the runner
+
+      # 3. Run Canvas Engine (Hydrate Manifests)
+      # This is the core magic. It reads canvas.yaml and updates ops/production/text-service/
+      - name: 🎨 Generate Kubernetes Manifests
+        run: |
+          # We use the git commit SHA as the image tag for immutable deployments
+          canvas generate ${{ env.SERVICE_PATH }} --image-tag ${{ github.sha }}
+
+      # 4. GitOps Sync (Commit changes to Ops folder)
+      # This step detects if the engine changed anything. If so, it commits the new YAMLs.
+      - name: 🚀 GitOps Sync (Commit & Push)
+        run: |
+          # Configure git identity
+          git config --global user.name "Canvas Bot"
+          git config --global user.email "bot@immersive.ai"
+          
+          # Add the generated ops files
+          git add ops/production/${{ env.SERVICE_NAME }}
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No infrastructure changes detected."
+          else
+            echo "Committing updated manifests..."
+            git commit -m "chore(deploy): Update ${{ env.SERVICE_NAME }} manifests [skip ci]"
+            git push
+          fi
