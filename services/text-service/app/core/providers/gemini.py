@@ -6,14 +6,12 @@ If the factory fails to supply a key, the provider should raise an error immedia
 
 """
 
-import os
 import google.generativeai as genai
 import httpx # for async network calls
 from PIL import Image
 import json
 from io import BytesIO
-import requests
-from typing import Tuple, Optional, Type
+from typing import Tuple, Optional
 
 from ..base import AIModelProvider
 from ...models import ContentRequest, GeneratedContent

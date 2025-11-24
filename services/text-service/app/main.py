@@ -80,7 +80,7 @@ async def create_product_content(
         print(f"An internal error occurred: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"An internal server error occurred."
+            detail= "An internal server error occurred."
         )
 
 @app.get("/v1/providers", tags=["Configuration"])
