@@ -10,4 +10,3 @@ def test_healthcheck_root():
         "status": "ok",
         "service": "text-service"
     }
-
