@@ -79,20 +79,30 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # Use the automatic token
 
-      # 1. Build Docker Image (Simulation)
+      # --- Setup Python Environment ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Upgrade pip & build tools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+
+      # ---- Install Canvas Engine CLI ---
+      - name: Install Canvas Engine
+        run: |
+          cd platform/engine
+          pip install -e .  # Install 'canvas' command globally in the runner
+
+      # Build Docker Image (Simulation)
       # In a real setup, you would push this to ECR/GCR.
       # Here we just verify it builds successfully.
       - name: 🐳 Build Docker Image
         run: |
           docker build -t ${{ env.SERVICE_NAME }}:${{ github.sha }} ${{ env.SERVICE_PATH }}
 
-      # 2. Setup Platform Engine Dependencies
-      - name: Set up Canvas Engine
-        run: |
-          cd platform/engine
-          pip install -e . # Install 'canvas' command globally in the runner
-
-      # 3. Run Canvas Engine (Hydrate Manifests)
+      # Run Canvas Engine (Hydrate Manifests)
       # This is the core magic. It reads canvas.yaml and updates ops/production/text-service/
       - name: 🎨 Generate Kubernetes Manifests
         run: |
