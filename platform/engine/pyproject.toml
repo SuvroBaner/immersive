@@ -16,3 +16,7 @@ canvas = "main:app"
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+# We must explicitly tell setuptools to include the 'main.py' file as a module
+[tool.setuptools]
+py-modules = ["main"]
