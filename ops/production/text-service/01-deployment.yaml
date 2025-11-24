@@ -37,7 +37,7 @@ spec:
 
       containers:
         - name: text-service
-          image: 123456789.dkr.ecr.us-east-1.amazonaws.com/immersive/text-service:v1.0.0.0-test
+          image: 123456789.dkr.ecr.us-east-1.amazonaws.com/immersive/text-service:v1.0.0-test
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
