@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+# --- 1. Robust Path Resolution (Handles Symbolic Links) ---
+# This block correctly finds the absolute path of the repository root, 
+# even when the script is executed via the symbolic link in /usr/local/bin.
+
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ]; do # Resolve $SOURCE until the file is no longer a symlink
+  DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+  SOURCE="$(readlink "$SOURCE")"
+  # If $SOURCE was a relative symlink, resolve it relative to the path where the symlink file was located
+  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+done
+
+# REPO_ROOT is the absolute path to your monorepo's base directory
+REPO_ROOT="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+# Define the absolute paths based on the reliably found REPO_ROOT
+ENGINE_DIR="$REPO_ROOT/platform/engine"
+VENV_PYTHON="$ENGINE_DIR/.venv/bin/python"
+CLI_SCRIPT="$ENGINE_DIR/main.py"
+
+# --- 2. Check and Bootstrap the Virtual Environment ---
+if [ ! -f "$VENV_PYTHON" ]; then
+    echo "🎨 Canvas Engine environment not found."
+    echo "Bootstrapping platform dependencies..."
+    
+    # Temporarily navigate to the engine directory
+    PUSHED_DIR=$(pwd)
+    # CD is now safe because $ENGINE_DIR is an absolute, resolved path
+    cd "$ENGINE_DIR" || exit 1
+    
+    # Try to use uv, fallback to python3 -m venv
+    if command -v uv >/dev/null 2>&1; then
+        uv sync
+    else
+        echo "⚠️ 'uv' not found. Falling back to python3 -m venv..."
+        python3 -m venv .venv
+        # Activating the venv for pip install
+        source .venv/bin/activate
+        pip install -e .
+    fi
+    
+    # Return to original location
+    cd "$PUSHED_DIR" || exit 1
+    echo "✅ Canvas Engine ready."
+fi
+
+# --- 3. Execute the Command ---
+# Executes the main Python CLI script using the Python interpreter in the venv
+exec "$VENV_PYTHON" "$CLI_SCRIPT" "$@"

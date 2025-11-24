@@ -1,17 +1,29 @@
 # Universal Service Template
+
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ metadata.name }}
-  namespace: {{ metadata.owner }}
+  namespace: production
   labels:
     app: {{ metadata.name }}
+    owner: {{ metadata.owner }}
     managed-by: canvas-engine
+    # Standard label for monitoring tools to auto-discover services
+    monitor: "true"
+  annotations:
+    # Annotations for internal load balancers (if needed in future)
+    # service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ spec.networking.port }}"
+    prometheus.io/path: "/metrics"
 spec:
+  # ClusterIP is correct for internal services behind an Ingress
   type: ClusterIP
   selector:
     app: {{ metadata.name }}
   ports:
-    - port: 80
-      targetPort: {{ spec.networking.port }}
+    - name: http-api
+      port: 80                  # The stable port other services call
+      targetPort: {{ spec.networking.port }} # The actual port your container listens on (8000)
       protocol: TCP

@@ -1,0 +1,32 @@
+# This template assumes you are running on AWS EKS (using the ALB Controller), which is standard for the stack you described. 
+# It maps the domain and path from your blueprint to an AWS Load Balancer.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: text-service
+  namespace: production
+  labels:
+    app: text-service
+    managed-by: canvas-engine
+  annotations:
+    # AWS ALB specific annotations (The "Magic" that creates the Cloud Load Balancer)
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    # Health check path from your blueprint
+    alb.ingress.kubernetes.io/healthcheck-path: 
+spec:
+  rules:
+    # Host construction: e.g., text-service.immersive.ai
+    # Or if you want a single api domain: api.immersive.ai
+    - host: text-service.
+      http:
+        paths:
+          - path: /v1/text
+            pathType: Prefix
+            backend:
+              service:
+                name: text-service
+                port:
+                  number: 80
