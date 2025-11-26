@@ -1,0 +1,40 @@
+[project]
+name = "image-service"
+version = "0.1.0"
+description = "Async GPU Pipeline for Professional Image Correction"
+readme = "README.md"
+requires-python = ">=3.10"
+packages = [{include = "app"}]
+dependencies = [
+    # --- ⚡ The Interface (API) ---
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.1.0",
+    "python-multipart>=0.0.9",  # For uploading files
+
+    # --- 🏋️‍♀️ The Worker (Async Engine) ---
+    "celery[redis]>=5.3.6",     # The Task Queue
+    "redis>=5.0.1",             # The Broker Driver
+
+    # --- 👁️ Computer Vision (The Brain) ---
+    "numpy>=1.26.0",
+    "pillow>=10.2.0",           # Basic Image Manipulation
+    "opencv-python-headless>=4.9.0", # Core CV (Headless for server)
+    
+    # --- 🛠️ Utilities ---
+    "httpx>=0.26.0",            # Async HTTP Client
+    "uuid>=1.30",
+    "python-json-logger>=2.0.7"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.uv]
+# This pin ensures all developers use the exact same logic
+package = true
